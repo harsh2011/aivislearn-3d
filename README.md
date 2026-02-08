@@ -1,20 +1,37 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# AI Vizual Learning
 
-# Run and deploy your AI Studio app
+An interactive 3D visual learning platform that builds magical worlds based on your topics.
 
-This contains everything you need to run your app locally.
+## Features
 
-View your app in AI Studio: https://ai.studio/apps/drive/16y841q-pE61-9rCgapxSlJU2oFZKTqZz
+- **3D Lesson Generation**: Generate complex 3D scenes to explain topics visually.
+- **Age-Appropriate Content**: Content tailored for different age groups (Toddler to Pre-teen).
+- **Interactive Quiz**: Test your knowledge with automatically generated quizzes.
+- **Local Server**: Securely handles generation logic and saves history locally.
 
-## Run Locally
+## Setup & Running
 
-**Prerequisites:**  Node.js
+**Prerequisites:** Node.js (v18+)
 
+1. **Install Dependencies**:
+   ```bash
+   npm install
+   cd server && npm install
+   cd ..
+   ```
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+2. **Configure API Key**:
+   Set your `API_KEY` in [.env.local](.env.local).
+
+3. **Run the Application**:
+   ```bash
+   npm run dev
+   ```
+   This command uses `concurrently` to start both the local Express server (port 3001) and the Vite frontend (port 3000).
+
+## Project Structure
+
+- `/components`: React UI components and 3D scenes.
+- `/services`: Frontend API services.
+- `/server`: Express backend for lesson generation and file storage.
+- `/server/generated_lessons`: Local storage for all generated lesson JSONs.
