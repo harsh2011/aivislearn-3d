@@ -2,7 +2,7 @@ import { LessonData } from "../types";
 
 export const generateLesson = async (topic: string, age: number): Promise<LessonData> => {
   try {
-    const response = await fetch('http://localhost:3001/api/generate-lesson', {
+    const response = await fetch('/api/generate-lesson', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

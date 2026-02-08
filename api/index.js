@@ -6,38 +6,36 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-// Load environment variables from specific path
+// Load environment variables
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Try to load from root .env.local
-dotenv.config({ path: path.join(__dirname, '../.env.local') });
+// On Vercel, .env is automatically loaded, but we can also load .env.local if present locally
+dotenv.config();
 
 const app = express();
-const port = 3001;
 
 app.use(cors());
 app.use(express.json());
 
-// Ensure generated_lessons directory exists
-const generatedLessonsDir = path.join(__dirname, 'generated_lessons');
+// Prepare directory for local file saving (only works in /tmp or locally)
+const generatedLessonsDir = process.env.VERCEL ? '/tmp/generated_lessons' : path.join(__dirname, 'generated_lessons');
 if (!fs.existsSync(generatedLessonsDir)) {
     fs.mkdirSync(generatedLessonsDir, { recursive: true });
 }
 
 // Initialize Gemini
-// Use GEMINI_API_KEY from .env.local if available, otherwise API_KEY
 const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
 
-if (!apiKey) {
-    console.error("Error: GEMINI_API_KEY or API_KEY not found in environment variables.");
-    process.exit(1);
-}
-
-const ai = new GoogleGenAI({ apiKey });
+// Note: On Vercel, if API key is missing at runtime, the request will fail. 
+// We don't exit the process here to allow other routes or environments to work.
 
 app.post('/api/generate-lesson', async (req, res) => {
     try {
+        if (!apiKey) {
+            throw new Error("Missing GEMINI_API_KEY. Please set it in Vercel environment variables.");
+        }
+
         const { topic, age } = req.body;
 
         if (!topic || !age) {
@@ -46,7 +44,7 @@ app.post('/api/generate-lesson', async (req, res) => {
 
         console.log(`Generating lesson for topic: "${topic}", age: ${age}`);
 
-        // Use a standard model
+        const ai = new GoogleGenAI({ apiKey });
         const model = "gemini-2.0-flash";
 
         let complexityInstructions = "";
@@ -160,21 +158,20 @@ app.post('/api/generate-lesson', async (req, res) => {
 
         if (response.text) {
             let text = response.text;
-            // Handle if response.text is a function (in recent SDKs)
-            if (typeof text === 'function') {
-                text = text();
-            }
-
+            if (typeof text === 'function') { text = text(); }
             const lessonData = JSON.parse(text);
 
-            // Save to file
-            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-            const sanitizedTopic = topic.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-            const filename = `lesson_${sanitizedTopic}_${age}_${timestamp}.json`;
-            const filePath = path.join(generatedLessonsDir, filename);
-
-            fs.writeFileSync(filePath, JSON.stringify(lessonData, null, 2));
-            console.log(`Saved lesson to ${filePath}`);
+            // Save to file (best effort - will only work locally or temporarily on Vercel)
+            try {
+                const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+                const sanitizedTopic = topic.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+                const filename = `lesson_${sanitizedTopic}_${age}_${timestamp}.json`;
+                const filePath = path.join(generatedLessonsDir, filename);
+                fs.writeFileSync(filePath, JSON.stringify(lessonData, null, 2));
+                console.log(`Saved lesson to ${filePath}`);
+            } catch (fsErr) {
+                console.warn("Could not save lesson to file:", fsErr.message);
+            }
 
             res.json(lessonData);
         } else {
@@ -187,6 +184,13 @@ app.post('/api/generate-lesson', async (req, res) => {
     }
 });
 
-app.listen(port, () => {
-    console.log(`Server running at http://localhost:${port}`);
-});
+// Local execution support
+if (!process.env.VERCEL && process.env.NODE_ENV !== 'production') {
+    const port = 3001;
+    app.listen(port, () => {
+        console.log(`Server running locally at http://localhost:${port}`);
+    });
+}
+
+// Export the app for Vercel
+export default app;
