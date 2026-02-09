@@ -184,6 +184,94 @@ app.post('/api/generate-lesson', async (req, res) => {
     }
 });
 
+// GET /api/generated-lessons
+// Returns a list of available lesson files with metadata
+app.get('/api/generated-lessons', (req, res) => {
+    try {
+        if (!fs.existsSync(generatedLessonsDir)) {
+            return res.json([]);
+        }
+
+        const files = fs.readdirSync(generatedLessonsDir)
+            .filter(file => file.endsWith('.json'))
+            .map(file => {
+                const filePath = path.join(generatedLessonsDir, file);
+                const stats = fs.statSync(filePath);
+
+                // Parse filename to extract metadata if possible: lesson_topic_age_timestamp.json
+                // Format: lesson_{topic}_{age}_{timestamp}.json
+                // Note: topic might contain underscores, so split carefully or use regex
+                // Simple parsing assumption: 
+                // Parts: "lesson", topic_part..., age, timestamp.json
+
+                let topic = "Unknown Topic";
+                let age = 0;
+                let timestamp = stats.birthtime; // Default to file creation time
+
+                // Attempt to parse filename
+                const match = file.match(/^lesson_(.+)_(.+)_([0-9T-Z:.]+)$/);
+                // The regex above might be too strict given the sanitized topic.
+                // Let's try a simpler split approach or just read the content for metadata?
+                // Reading content for every file might be slow if there are many. 
+                // Let's rely on basic splitting or just return filename and let client parse or just read file content for small number of files.
+                // Better approach: Read the file content since we need the title/age accurately and files are small JSONs.
+
+                try {
+                    const content = fs.readFileSync(filePath, 'utf-8');
+                    const json = JSON.parse(content);
+                    if (json.topic) topic = json.topic;
+                    // We don't store age in the JSON currently, but it is in the filename.
+                    // Let's stick to reading from JSON for topic at least.
+
+                    // Regex to extract age from filename if we really need it, or just rely on what's inside.
+                    // Actually, let's keep it simple: return the full lesson data summary.
+                    return {
+                        filename: file,
+                        topic: json.topic,
+                        age: age, // We might not have age inside the JSON based on previous code.
+                        theme: json.theme,
+                        createdAt: stats.birthtime,
+                        // Extract age from filename if possible
+                        ageFromFilename: file.split('_').slice(-2, -1)[0] // weak heuristic
+                    };
+
+                } catch (e) {
+                    return { filename: file, error: "Invalid JSON", createdAt: stats.birthtime };
+                }
+            })
+            // Sort by newest first
+            .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+        res.json(files);
+    } catch (error) {
+        console.error("List Lessons Error:", error);
+        res.status(500).json({ error: "Failed to list lessons" });
+    }
+});
+
+// GET /api/generated-lessons/:filename
+// Returns the content of a specific lesson file
+app.get('/api/generated-lessons/:filename', (req, res) => {
+    try {
+        const { filename } = req.params;
+        // Basic security check to prevent directory traversal
+        if (filename.includes('..') || filename.includes('/')) {
+            return res.status(400).json({ error: "Invalid filename" });
+        }
+
+        const filePath = path.join(generatedLessonsDir, filename);
+        if (!fs.existsSync(filePath)) {
+            return res.status(404).json({ error: "Lesson not found" });
+        }
+
+        const content = fs.readFileSync(filePath, 'utf-8');
+        res.json(JSON.parse(content));
+    } catch (error) {
+        console.error("Get Lesson Error:", error);
+        res.status(500).json({ error: "Failed to retrieve lesson" });
+    }
+});
+
 // Local execution support
 if (!process.env.VERCEL && process.env.NODE_ENV !== 'production') {
     const port = 3001;

@@ -22,3 +22,38 @@ export const generateLesson = async (topic: string, age: number): Promise<Lesson
     throw error;
   }
 };
+
+export interface LessonSummary {
+  filename: string;
+  topic: string;
+  age: number;
+  theme: string;
+  createdAt: string;
+  ageFromFilename?: string;
+}
+
+export const fetchGeneratedLessons = async (): Promise<LessonSummary[]> => {
+  try {
+    const response = await fetch('/api/generated-lessons');
+    if (!response.ok) {
+      throw new Error(`Failed to fetch lessons: ${response.status}`);
+    }
+    return await response.json();
+  } catch (error) {
+    console.error("Fetch Lessons Error:", error);
+    return [];
+  }
+};
+
+export const fetchLesson = async (filename: string): Promise<LessonData> => {
+  try {
+    const response = await fetch(`/api/generated-lessons/${filename}`);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch lesson: ${response.status}`);
+    }
+    return await response.json();
+  } catch (error) {
+    console.error("Fetch Lesson Error:", error);
+    throw error;
+  }
+};
