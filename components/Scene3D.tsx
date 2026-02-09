@@ -132,7 +132,7 @@ interface Scene3DProps {
 
 const Scene3D: React.FC<Scene3DProps> = ({ currentObjectStates, theme }) => {
   return (
-    <Canvas shadows camera={{ position: [0, 3, 10], fov: 50 }}>
+    <Canvas shadows camera={{ position: [0, 4, 14], fov: 50 }}>
       <color attach="background" args={[theme === 'space' ? '#0f172a' : '#f0f9ff']} />
       <Background theme={theme} />
 
