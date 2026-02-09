@@ -45,7 +45,7 @@ app.post('/api/generate-lesson', async (req, res) => {
         console.log(`Generating lesson for topic: "${topic}", age: ${age}`);
 
         const ai = new GoogleGenAI({ apiKey });
-        const model = "gemini-2.0-flash";
+        const model = "gemini-3-pro-preview";
 
         let complexityInstructions = "";
         if (age <= 5) {
