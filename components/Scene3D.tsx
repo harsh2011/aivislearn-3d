@@ -30,15 +30,15 @@ declare global {
 
 const ShapeMesh: React.FC<{ type: string; color: string; opacity: number }> = ({ type, color, opacity }) => {
   const meshRef = useRef<THREE.Mesh>(null);
-  
+
   // Create material with opacity
   const material = useMemo(() => (
-    <meshStandardMaterial 
-      color={color} 
-      roughness={0.3} 
-      metalness={0.1} 
-      transparent={true} 
-      opacity={opacity} 
+    <meshStandardMaterial
+      color={color}
+      roughness={0.3}
+      metalness={0.1}
+      transparent={true}
+      opacity={opacity}
     />
   ), [color, opacity]);
 
@@ -62,10 +62,10 @@ interface AnimatedObjectProps {
 
 const AnimatedObject: React.FC<AnimatedObjectProps> = ({ targetState }) => {
   const groupRef = useRef<THREE.Group>(null);
-  
+
   // We use refs to store current interpolated values to avoid React rerenders on every frame
   // However, for simplicity in this prompt context, we will simply lerp the THREE objects directly in useFrame.
-  
+
   useFrame((state, delta) => {
     if (!groupRef.current) return;
 
@@ -74,10 +74,10 @@ const AnimatedObject: React.FC<AnimatedObjectProps> = ({ targetState }) => {
 
     // Position
     g.position.lerp(new THREE.Vector3(...targetState.position), lerpFactor);
-    
+
     // Scale
     g.scale.lerp(new THREE.Vector3(...targetState.scale), lerpFactor);
-    
+
     // Rotation (Quaternion interpolation is better, but Euler lerp is okay for small simple rotations)
     // We'll manually lerp Euler values for simplicity
     g.rotation.x = THREE.MathUtils.lerp(g.rotation.x, targetState.rotation[0], lerpFactor);
@@ -92,7 +92,7 @@ const AnimatedObject: React.FC<AnimatedObjectProps> = ({ targetState }) => {
           Move/Scale/Rotate are handled by useFrame for smoothness.
       */}
       <Float speed={1} rotationIntensity={0.2} floatIntensity={0.2} enabled={targetState.opacity > 0.1}>
-          <ShapeMesh type={targetState.shape} color={targetState.color} opacity={targetState.opacity} />
+        <ShapeMesh type={targetState.shape} color={targetState.color} opacity={targetState.opacity} />
       </Float>
 
       {targetState.label && targetState.opacity > 0.5 && (
@@ -113,14 +113,14 @@ const AnimatedObject: React.FC<AnimatedObjectProps> = ({ targetState }) => {
 };
 
 const Background = ({ theme }: { theme: string }) => {
-    switch(theme) {
-        case 'space': return <Stars radius={100} depth={50} count={5000} factor={4} saturation={0} fade speed={1} />;
-        case 'forest': return <Environment preset="park" background blur={0.6} />;
-        case 'sunset': return <Environment preset="sunset" background blur={0.6} />;
-        case 'sky': 
-        default:
-             return <><Cloud opacity={0.5} speed={0.4} /><Environment preset="city" /></>;
-    }
+  switch (theme) {
+    case 'space': return <Stars radius={100} depth={50} count={5000} factor={4} saturation={0} fade speed={1} />;
+    case 'forest': return <Environment preset="park" background blur={0.6} />;
+    case 'sunset': return <Environment preset="sunset" background blur={0.6} />;
+    case 'sky':
+    default:
+      return <><Cloud opacity={0.5} speed={0.4} /><Environment preset="city" /></>;
+  }
 }
 
 // --- Main Scene Component ---
@@ -135,26 +135,26 @@ const Scene3D: React.FC<Scene3DProps> = ({ currentObjectStates, theme }) => {
     <Canvas shadows camera={{ position: [0, 3, 10], fov: 50 }}>
       <color attach="background" args={[theme === 'space' ? '#0f172a' : '#f0f9ff']} />
       <Background theme={theme} />
-      
+
       <ambientLight intensity={0.8} />
       <pointLight position={[10, 10, 10]} intensity={1} castShadow />
-      
-      <group position={[0, -1, 0]}>
+
+      <group position={[0, 1, 0]}>
         {/* Floor */}
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.5, 0]} receiveShadow>
-            <planeGeometry args={[100, 100]} />
-            <shadowMaterial transparent opacity={0.1} />
+          <planeGeometry args={[100, 100]} />
+          <shadowMaterial transparent opacity={0.1} />
         </mesh>
 
         {currentObjectStates.map((obj) => (
-           <AnimatedObject key={obj.id} targetState={obj} />
+          <AnimatedObject key={obj.id} targetState={obj} />
         ))}
       </group>
 
-      <OrbitControls 
-        minPolarAngle={Math.PI / 4} 
-        maxPolarAngle={Math.PI / 2.2} 
-        minDistance={5} 
+      <OrbitControls
+        minPolarAngle={Math.PI / 4}
+        maxPolarAngle={Math.PI / 2.2}
+        minDistance={5}
         maxDistance={25}
         enablePan={false}
       />
